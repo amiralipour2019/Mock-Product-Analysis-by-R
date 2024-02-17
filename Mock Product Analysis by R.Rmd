@@ -1,0 +1,1099 @@
+---
+title: "Mock Product Analysis by R"
+author: "Amir Alipour Yengejeh"
+date: "2024-02-09"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+This project aims to perform a mock product analysis using simulated datasets from Meta products to mimic real-world product analytics tasks. The datasets and questions are designed to reflect typical scenarios encountered in product analysis, focusing on user engagement and product growth.
+
+# Datasets Overview
+
+In this study, we utilize two primary simulated datasets to analyze user interactions and demographics within a social media platform context, resembling Meta's environment. These datasets have been fabricated for illustrative purposes to demonstrate various data analysis techniques commonly applied in product analytics.
+
+## User Interactions Dataset
+
+The `meta_products` dataset simulates 5,000 records of user interactions with different platform products. Each record represents an interaction instance with the following features:
+
+- `date`: The date of the interaction. Stored as character
+strings in the format ”YYYY-MM-DD”
+- `user_id`: A unique identifier for the user.
+- `product`: The platform product with which the user interacted. Stored
+as character strings (e.g., ”Groups”, ”Pages”, ”News Feed”).
+
+- `time_spent`: The duration (in minutes) the user spent during the interaction. Stored as integers.
+
+- `user_type`: Categorizes users into 'new' or 'returning'. Stored as character strings.
+- `user_region`: The geographical region of the user (e.g., North America, Europe, Asia).
+- `engagement_score`: A score from 1 to 10 representing the user's engagement level during the interaction.
+- `first_action_date`: The date of the user's first interaction with the platform.
+- `device_type`: The type of device used for the interaction (e.g., mobile, desktop, tablet).
+- `transactions`: The number of transactions (if any) made during the interaction.
+- `transaction_value`: The total value of transactions made during the interaction.
+- `user_state`: Indicates whether the interaction was on the user's first action date.
+- `acquisition_cohort`: The month and year when the user first interacted with the platform.
+
+## User Demographics Dataset
+
+The `meta_demographic_data` dataset complements the user interactions data by providing 1,000 records of demographic information for a subset of users, with the following features:
+
+- `user_id`: A unique identifier for the user (links to `meta_products` dataset).
+- `age`: The age of the user.
+- `gender`: The gender of the user (Male, Female, Other).
+- `occupation`: The user's occupation (e.g., Student, Professional, Retired, Unemployed).
+- `user_region`: The geographical region of the user (e.g., North America, Europe, Asia). 
+- `country`: The user's country of residence.
+
+These datasets allow us to perform a comprehensive analysis of user behavior and product performance from multiple angles, including engagement,  growth patterns, and demographic segmentation.
+
+
+
+# Data Preparation
+
+```{r}
+#Call the required libraries
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(readxl)
+
+#Read the dataset
+setwd("D:\\Docs\\Jobs\\Intern\\Summer2024\\Meta\\Product Analytics- Interview\\Product Analysis")
+getwd()
+```
+2. **Generating Mock Data**
+# ```{r generate-mock-data}
+# # Set seed for reproducibility
+# set.seed(42)
+# 
+# # Generate mock user interaction data
+# dates=seq(as.Date("2023-01-01"), as.Date("2023-12-31"), by="day")
+# user_ids=1:1000
+# products= c("News Feed", "Messenger", "Groups", "Pages")
+# time_spent=sample(1:120, size=5000, replace=TRUE)
+# user_types=c("new", "returning")
+# user_regions= c("North America", "Europe", "Asia", "South America", "Africa")
+# engagement_scores=sample(1:10, size=5000, replace=TRUE)
+# device_types= c("mobile", "desktop", "tablet")
+# transactions=sample(0:5, size=5000, replace=TRUE)
+# transaction_values=sample(c(0, 5, 10, 20, 50, 100), size=5000, replace=TRUE)
+# 
+# meta_products <- tibble(
+#   date=sample(dates,size=5000,replace=TRUE),
+#   user_id=sample(user_ids,size=5000,replace=TRUE),
+#   product=sample(products,size=5000,replace=TRUE),
+#   time_spent=time_spent,
+#   user_type=sample(user_types,size=5000,replace=TRUE),
+#   user_region=sample(user_regions,size=5000,replace=TRUE),
+#   engagement_score=engagement_scores,
+#   device_type=sample(device_types,size=5000,replace=TRUE),
+#   transactions=transactions,
+#   transaction_value=transaction_values
+# )
+# ```
+
+
+```{r}
+#store the dataset
+#write.csv(meta_products,"meta_products_rmark.csv")
+#meta_products=read.csv("meta_products.csv")[,-c(1,7)]
+```
+
+```{r}
+#head(meta_products)
+```
+
+
+```{r}
+#dim(meta_products)
+```
+
+
+
+
+3. **Preparing Demographic Data**
+# 
+# Simulate or load demographic data for users, including age, gender, occupation, and country.
+# 
+# ```{r}
+# #Mapping of regions to countries
+# region_country_mapping <- list(
+#   "North America" = c("USA", "Canada"),
+#   "Asia" = c("Japan", "China", "India"),
+#   "South America" = c("Brazil", "Argentina", "Chile"),
+#   "Africa" = c("Egypt", "South Africa", "Ghana"),
+#   "Europe" = c("Spain", "France", "UK", "Germany", "Turkey")
+# )
+# 
+# ```
+# 
+# ```{r}
+# # Assuming you have user_ids and user_regions vectors
+# user_ids <- 1:1000  # Example user IDs
+# user_regions <- sample(names(region_country_mapping), 1000, replace = TRUE)  # Example regions for users
+# 
+# # Generate user_details data frame
+# user_details <- data.frame(
+#   user_id = user_ids,
+#   age = sample(18:65, size = 1000, replace = TRUE),
+#   gender = sample(c("Male", "Female", "Other"), size = 1000, replace = TRUE),
+#   occupation = sample(c("Student", "Professional", "Retired", "Unemployed"), size = 1000, replace = TRUE),
+#   region = user_regions  # Assign region from the example or actual data
+# )
+# 
+# # Assign country based on region
+# user_details$country <- mapply(function(region) {
+#   countries <- region_country_mapping[[region]]
+#   sample(countries, 1)
+# }, user_details$region)
+# 
+# ```
+# 
+# ```{r}
+# # Generate 'country' for demographic data based on 'user_region'
+# meta_products$user_region <- sample(names(region_country_mapping), size=5000, replace=TRUE)
+# 
+# user_countries <- sapply(meta_products$user_region, select_country_from_region)
+#
+#```
+
+<!-- ```{r} -->
+<!-- length(user_countries) -->
+<!-- ``` -->
+
+
+<!-- ```{r generate-demographic-data} -->
+
+<!-- user_details <- data.frame( -->
+<!--   user_id = user_ids, -->
+<!--   age = sample(18:65, size = 1000, replace = TRUE), -->
+<!--   gender = sample(c("Male", "Female", "Other"), size = 1000, replace = TRUE), -->
+<!--   occupation = sample(c("Student", "Professional", "Retired", "Unemployed"), size = 1000, replace = TRUE), -->
+<!--   country = user_countries[1:1000] # Ensure alignment with user_region -->
+<!-- ) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- head(user_details) -->
+<!-- ``` -->
+
+```{r}
+#write.csv(user_details,"user_details.csv")
+#demographic_data=read.csv("user_details.csv")[,-1]
+```
+
+```{r}
+#head(demographic_data)
+```
+
+```{r}
+#dim(demographic_data)
+```
+
+```{r}
+# Merge the product and demographic data
+# Example merge operation
+#merged_data <- merge(meta_products, demographic_data, by = "user_id")
+
+```
+
+```{r}
+#head(merged_data)
+```
+
+```{r}
+#dim(merged_data)
+```
+
+```{r}
+#write.csv(merged_data,"merged_meta_data.csv")
+merged_data=read.csv("merged_meta_data.csv")[,-1]
+```
+
+```{r}
+#get the unique values of the gender
+table(merged_data$gender)
+```
+
+```{r}
+unique_gender=merged_data%>%
+  distinct(gender)%>%
+  pull(gender)
+unique_gender
+```
+
+```{r}
+#To get the count of each level of gender
+gender_count2=merged_data%>%
+  count(gender)
+gender_count2
+```
+
+```{r}
+# get the unique values of the occupation
+unique_occupation=merged_data%>%
+  count(occupation)%>%
+  arrange(desc(n))
+unique_occupation
+```
+
+```{r}
+# Cross-tabulation of gender vs occupation
+gender_occupation_count=merged_data%>%
+  count(gender,occupation)
+gender_occupation_count
+```
+
+
+```{r}
+# visualize gender vs occupation
+ggplot(gender_occupation_count,aes(x=as.factor(occupation),y=n,
+       fill=as.factor(gender)))+
+  geom_bar(stat = "identity", position="dodge")+
+  theme_minimal()+
+   labs(title="Gender and Occupation Counts", x="Occupation", y="Count")+
+  scale_fill_discrete(name="Gender")
+```
+
+```{r}
+# visualize gender vs occupation
+```
+
+
+```{r}
+p_facet=ggplot(gender_occupation_count, aes(x=as.factor(gender),y=n,fill=as.factor(gender)))+
+  geom_bar(stat="identity",position="dodge")+
+theme_minimal()+
+labs(labs(title="Gender and Occupation Counts", x="gender", y="Count"))+
+scale_fill_discrete(name="Gender")+
+facet_wrap(~occupation)
+p_facet
+```
+
+```{r}
+#Average Age by Occupation:Find the average age of users for each occupation
+avg_age_occupation=merged_data%>%
+  group_by(occupation)%>%
+  summarise(avg_age=mean(age,na.rm=TRUE),sdv_age=sd(age))
+avg_age_occupation
+```
+
+```{r}
+#Percentage of Users by Country:Compute the percentage of users in each country.
+percentage_users_country=merged_data%>%
+  group_by(country)%>%
+  summarise(user_count=n())%>%
+  mutate(persantage=user_count/sum(user_count))%>%
+  arrange(desc(persantage))%>%
+  top_n(10)
+percentage_users_country
+
+```
+
+
+
+```{r}
+# Average of Ages by Country:Calculate the average of ages for users in each country
+avg_age_country=merged_data%>%
+  group_by(country)%>%
+  summarise(avg_country=mean(age,na.rm=TRUE),sdv_age=sd(age))
+avg_age_country
+```
+
+```{r}
+#Percentage of Retired Users
+percentage_retired=merged_data%>%
+  group_by(occupation)%>%
+  summarise(occupation_count=n())%>%
+  mutate(percentage_occupation=occupation_count/sum(occupation_count)*100)%>%
+  filter(occupation=="Retired")
+percentage_retired
+```
+
+```{r}
+#Occupation Distribution by Country:Find the distribution (count) of occupations within each country.
+dist_occupation_country=merged_data%>%
+count(country,occupation)%>%
+  mutate(prob=n/sum(n)*100)
+  
+dist_occupation_country
+```
+
+```{r}
+#Calculate Total Sum across Entire Dataset
+total_prob=sum(dist_occupation_country$prob)
+total_prob
+```
+
+```{r}
+#Average Age of Users by Gender and Country:Calculate the average age of users grouped by both gender and country.
+avg_age_countryVSgender=merged_data%>%
+  group_by(country,gender)%>%
+  summarise(avg_age=mean(age,na.rm=TRUE),sdv_age=sd(age))
+  
+avg_age_countryVSgender
+```
+
+```{r}
+# Applications of Select function
+Select_Specific_Columns=merged_data%>%
+  select(user_id,age,occupation)
+head(Select_Specific_Columns)
+```
+
+```{r}
+#Select Columns by Exclusion
+Select_Columns_Exclusion=merged_data%>%
+  select(-age,-country)
+head(Select_Columns_Exclusion)
+```
+
+```{r}
+# Select columns that start with "u"
+selected_data=merged_data%>%
+  select(starts_with("u"))
+head(selected_data)
+```
+
+```{r}
+#Select Columns Using Index Numbers
+selected_data_index=merged_data%>%
+  select(1,3,5)
+head(selected_data_index)
+
+```
+
+```{r}
+meta_products=merged_data%>%
+  mutate(across(c(time_spent,engagement_score),as.numeric))
+```
+
+```{r}
+str(meta_products)
+```
+# Exploratory Data Analysis (EDA)
+```{r}
+#Distribution of TimeSpent with Histogram
+ggplot(merged_data, aes( x=time_spent))+
+  geom_histogram(binwidth=5,fill="blue",color="red")+
+  geom_density(alpha=0.2,color="green")+
+  labs(title="Time Spent Distribution with Density Curve",
+       x="Time Spent (minutes)",
+       y="Density")+
+  theme_minimal()# Show the plot with a clean and simple appearance
+```
+
+
+# ```{r}
+# geom_histogram(binwidth=5,fill="blue",color="red")+
+#   geom_density(color = "black", fill = "black", alpha = 0.2)+
+#   labs(title="Time Spent Distribution with Density Curve",
+#        x="Time Spent (minutes)",
+#        y="Density")+
+#   theme_minimal()# Show the plot with a clean and simple appearance
+#   
+# ```
+
+```{r}
+# Bar plot for user type feature
+ggplot(merged_data,aes(x=as.factor( user_type), fill=as.factor(user_type) ))+
+  geom_bar()+
+  theme_minimal()+
+  labs(title = "Distribution of User Types",
+       x = "User Type",
+       y = "Count")+
+  scale_fill_discrete(name="User Type") # customize the fill color legend
+```
+
+
+## Question 1: Find the most usage product by non-employees users:(Assume users with User_id<100 as employee's users)
+```{r}
+non_employees_products=merged_data%>%
+  filter(user_id>100)%>%
+ count(product)%>%
+  arrange(desc(n))
+
+
+non_employees_products
+```
+```{r}
+ggplot(non_employees_products,aes(x=as.factor(product),y=n,fill=as.factor(product)))+
+  geom_bar(stat="identity")+
+  theme_minimal()+
+  labs(title = "Product Usage Count by Non-Employee Users",
+  x="Product",
+y="Usage Count")+
+  scale_fill_discrete(name="Product")
+```
+
+
+## Daily Active Users (DAU) Trend Analysis for The Last Quarter (Number of daily interactions users):
+```{r}
+#get the last quarter
+last_quarter=merged_data%>%
+  filter(date>=as.Date("2023-10-01")& date<=as.Date("2023-12-31"))%>%
+  arrange(desc(date))
+
+  head(last_quarter)
+```
+
+
+```{r}
+#get the most usage product in last quarter
+ last_quarter_most_used_products=last_quarter%>%
+  group_by(product)%>%
+  summarise(prduct_usage=n())%>%
+  top_n(1,product)%>%
+  pull(product)
+  
+
+head(last_quarter_most_used_products)
+```
+```{r}
+dau_last_quarter_usage=last_quarter%>%
+  filter(product==last_quarter_most_used_products)%>%
+  group_by(date)%>%
+  summarise(dau=n_distinct(user_id))%>%
+              mutate(percentage_dau=dau/sum(dau)*100)
+  
+
+head(dau_last_quarter_usage)
+```
+
+```{r}
+tail(dau_last_quarter_usage)
+```
+
+
+```{r}
+# Visualize DAU
+ggplot(dau_last_quarter_usage,aes(x=as.factor(date),y=dau,group = 1))+
+  geom_point(color="red")+
+  geom_line(color="blue")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1)) +
+  labs(x = "Date", y = "Daily Active Users", title = "Daily Active Users Over Time")
+```
+## Weekly Active Users (DAU) Trend Analysis for The Last Quarter:
+```{r}
+wau_last_quarter_usage=last_quarter%>%
+  filter(product==last_quarter_most_used_products)%>%
+  group_by(week=floor_date(as.Date(date),"week"))%>%
+  summarise(wau=n())
+
+wau_last_quarter_usage
+```
+
+
+```{r}
+# Visualize WAU
+ggplot(wau_last_quarter_usage,aes(x=as.factor(week),y=wau,group = 1))+
+  geom_point(color="red")+
+  geom_line(color="blue")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1)) +
+  labs(x = "Date", y = "weekly Active Users", title = "Weekly Active Users Over Time")
+```
+
+
+```{r}
+mau_last_quarter_usage=last_quarter%>%
+  filter(product==last_quarter_most_used_products)%>%
+  group_by(month=floor_date(as.Date(date),"month"))%>%
+  summarise(mau=n())
+
+mau_last_quarter_usage
+```
+
+
+```{r}
+# Visualize MAU
+ggplot(mau_last_quarter_usage,aes(x=as.factor(month),y=mau,group = 1))+
+  geom_point(color="red")+
+  geom_line(color="blue")+
+  theme_minimal()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1)) +
+  labs(x = "Date", y = "Monthly Active Users", title = "Monthly Active Users Over Time")
+```
+
+
+```{r}
+# Average spent time of each device type
+device_timesprnt=merged_data%>%
+  group_by(device_type)%>%
+  summarise( count=n(),
+    avg_spentTime=mean(time_spent,na.rm=TRUE),
+            sdv_spentTime=sd(time_spent))
+device_timesprnt
+```
+
+
+```{r}
+# Perform ANOVA to compare the time spent for different devices:
+anova_results=aov(time_spent~device_type,data=merged_data)
+summary(anova_results)
+```
+
+
+```{r}
+
+# Perform Tukey's HSD test
+post_hoc_results=TukeyHSD(anova_results)
+post_hoc_results
+```
+
+
+```{r}
+# Total time spent by user type
+total_time_spent_type=merged_data%>%
+  group_by(user_type)%>%
+  summarize(total_time=sum(time_spent))
+
+total_time_spent_type
+```
+
+
+```{r}
+# Average Engagement Score by Product:
+avg_engagement=merged_data%>%
+  group_by(product)%>%
+  summarize(count=n(),
+            avg_score=mean(engagement_score,na.rm=TRUE),
+            sd=sd(engagement_score,na.rm=TRUE)
+            )
+avg_engagement
+```
+```{r}
+head(merged_data)
+```
+
+
+```{r}
+#Percentage of Transactions by Device Type:
+percentage_transactions_device=merged_data%>%
+  group_by(device_type)%>%
+  summarize(total_transactions=sum(transactions),.groups = 'drop')%>%
+  mutate(percentage_transactions=total_transactions/sum(total_transactions)*100)
+
+percentage_transactions_device
+```
+
+
+```{r}
+#Average Transaction Value by User Region and Product:
+avg_transaction_values_by_regions=merged_data%>%
+  group_by(device_type,country)%>%
+  summarize(count=n(),
+            avg_transactions_value=mean(transaction_value,na.rm=TRUE),
+            sdv_transaction_value=sd(transaction_value))
+  
+avg_transaction_values_by_regions
+```
+```{r}
+meta_products=read.csv("data_products2.csv")[,-1]
+head(meta_products)
+```
+```{r}
+#Count of New vs. Returning Users by Acquisition Cohort:
+retention=meta_products%>%
+  group_by(acquisition_cohort,user_type)%>%
+  summarize(total_users=n_distinct(user_id))%>%
+  mutate(percentage=total_users/sum(total_users)*100)
+
+retention
+```
+
+
+```{r}
+#Percentage of High Engagement Users by Product (Assume high engagement users whose scores above 7 ):
+percentage_highEngaged_users=merged_data%>%
+  group_by(product)%>%
+  summarise(total_users=sum(engagement_score>7))%>%
+  mutate(percentage_users=total_users/sum(total_users)*100)
+
+percentage_highEngaged_users
+```
+# Joins in R using dplyr
+Joins are used to combine two datasets based on a common key or set of keys. The type of join determines how rows from the two datasets are matched and which rows are included in the result. Here's a quick overview of the most commonly used join operations provided by the dplyr package in R.
+
+### Sample Datasets
+Consider the following two datasets for our examples:
+```{r}
+#Employees dataset
+employees <- data.frame(
+  emp_id = c(1, 2, 3, 4),
+  emp_name = c("John Doe", "Jane Doe", "Jim Beam", "Jack Daniels"),
+  department_id = c(101, 102, 101, 103)
+)
+# Departments dataset
+departments <- data.frame(
+  department_id = c(101, 102, 103, 104),
+  department_name = c("HR", "Finance", "Marketing", "IT")
+)
+```
+
+```{r}
+head(employees)
+```
+
+
+```{r}
+head(departments)
+```
+
+* **1. Inner Join:**
+
+An inner join returns all rows from both datasets where there is a match. If there is no match, the rows are not included in the result.
+```{r}
+#inner join
+inner_join_data=inner_join(employees,departments)
+```
+
+
+```{r}
+head(inner_join_data)
+```
+* **2. Left Join:**
+
+A left join returns all rows from the left dataset, and the matched rows from the right dataset. The result is NULL from the right side if there is no match.
+```{r}
+left_join_data=left_join(employees,departments,by="department_id")
+```
+
+```{r}
+head(left_join_data)
+```
+
+* **3. Right Join**
+
+A right join returns all rows from the right dataset, and the matched rows from the left dataset. The result is NULL from the left side if there is no match.
+```{r}
+right_join_data=right_join(employees,departments,by="department_id")
+```
+
+```{r}
+head(right_join_data)
+```
+
+* **4. Full Join**
+
+A full join returns all rows when there is a match in either left or right dataset. Rows that do not match are included in the result, but with NULL values in place of missing data.
+```{r}
+result_full <- full_join(employees,departments,by="department_id")
+```
+
+```{r}
+result_full
+```
+
+* **5. Semi Join**
+
+A semi join returns all rows from the left dataset where there are matching rows in the right dataset, but it does not include any columns from the right dataset.
+```{r}
+result_semi <- semi_join(employees,departments,by="department_id")
+```
+
+```{r}
+result_semi 
+```
+
+* **6. Anti Join**
+An anti join returns all rows from the left dataset for which there are no matching rows in the right dataset.
+
+```{r}
+result_anti <- anti_join(employees,departments,by="department_id")
+```
+
+```{r}
+result_anti
+```
+
+# Union
+
+The $union()$ function returns all unique rows from both data frames. It is equivalent to a SQL UNION operation, which combines the results of two SELECT statements and removes duplicate rows.
+
+### Example
+```{r}
+# Load dplyr
+library(dplyr)
+
+# Create sample data frames
+df1 <- data.frame(Name = c("Alice", "Bob", "Charlie"), Age = c(25, 30, 35))
+head(df1)
+
+
+```
+```{r}
+df2 <- data.frame(Name = c("Alice", "Daniel", "Eve"), Age = c(25, 40, 45))
+
+head(df2)
+```
+
+
+```{r}
+# Perform union
+result_union <- union(df1, df2)
+
+# View result
+print(result_union)
+```
+# 
+
+The union_all() function returns all rows from both data frames, including duplicates. It's equivalent to a SQL UNION ALL operation, combining the results of two SELECT statements without removing duplicates.
+### Example
+```{r}
+# Perform union all
+result_union_all <- union_all(df1, df2)
+
+# View result
+print(result_union_all)
+
+```
+### Key Differences:
+* **Uniqueness:**
+
+union() returns unique rows, eliminating duplicates, while union_all() keeps all rows, including duplicates.
+
+* **Use Case:** Use union() when you need a combined set without duplicates and union_all() when you need to retain all records from both datasets, including repeats.
+
+# Distinct
+
+The distinct() function removes duplicate rows from a dataframe. You can specify columns to consider when identifying duplicates.
+```{r}
+# Sample data frames
+df1_1 <- data.frame(x = 1:5, y = letters[1:5])
+df2_2 <- data.frame(x = 3:7, y = letters[3:7])
+
+
+```
+
+
+```{r}
+df1_1
+```
+```{r}
+df2_2
+```
+
+
+```{r}
+# Union - unique rows from both data frames
+union_df_2 <- dplyr::union(df1_1, df2_2)
+```
+
+
+```{r}
+union_df_2
+```
+
+```{r}
+# Union All - all rows including duplicates
+union_all_df2 <- dplyr::union_all(df1_1, df2_2)
+union_all_df2
+```
+
+
+```{r}
+# Removing duplicate rows
+distinct_df <- dplyr::distinct(union_all_df2)
+distinct_df
+```
+
+# Random Sampling
+
+You can use the sample_n() and sample_frac() functions to randomly sample a fixed number of rows or a fraction of the dataframe, respectively.
+```{r}
+# Sample 3 random rows
+sampled_n <- dplyr::sample_n(df1_1, 3)
+sampled_n
+```
+
+
+```{r}
+# Sample 50% of the rows
+sampled_frac <- dplyr::sample_frac(df1_1, 0.5)
+sampled_frac
+```
+# De-Duplication
+
+De-duplication involves removing duplicate entries from a dataset. It's similar to using distinct() but often refers to a broader process of identifying and removing duplicates to clean the dataset.
+
+```{r}
+# De-duplicate based on a specific column
+dedup_df1 <- df1_1 %>% distinct(x, .keep_all = TRUE)
+dedup_df1
+```
+
+
+```{r}
+# De-duplicate based on a specific column
+dedup_df2 <- df1_1 %>% distinct(x, .keep_all = FALSE)
+dedup_df2
+```
+# Optimization
+
+Optimization in data manipulation can involve several practices, including:
+
+* **Selecting**
+Only Necessary Columns: This reduces memory usage and speeds up operations.
+```{r}
+optimized_df <- df1_1 %>% select(x)
+optimized_df
+```
+
+* **Filtering Early:**
+
+Apply filter() as early as possible in your pipeline to reduce the size of the dataframe you're working with.
+```{r}
+filtered_optimized_df <- df1_1 %>% filter(x > 3) %>%
+  mutate(z = y)
+filtered_optimized_df
+```
+* ** Using data.table for Large Datasets:**
+
+For very large datasets, consider using the data.table package, which offers optimized versions of many dplyr functions and can significantly speed up data manipulation operations.
+
+```{r}
+
+```
+# Mock Dataset 2
+
+```{r}
+ # Event-level data: School attendance log
+attendance_log=data.frame(
+  date=rep(seq.Date(as.Date("2023-01-01"),by="day",length.out = 30), times=100),
+  student_id=sample(1:500,size=3000,replace=3000),
+  attendance=sample(c("present","Absent"),3000,replace=TRUE,prob=c(0.9,0.1))
+)
+```
+
+
+```{r}
+head(attendance_log)
+```
+
+
+```{r}
+dim(attendance_log)
+```
+
+
+```{r}
+# Dimension-level data: Student demographics
+student_demo <- data.frame(
+  student_id=1:500,
+  school_id=sample(1:10,500,replace=TRUE),
+  grade_level=sample(1:12,500,replace=TRUE),
+  date_of_brith=seq.Date(as.Date("2005-01-01"),by="month", length.out = 500),
+  hometown=sample(c("Orlando","San Jose","New York", "Huston"),size=500,replace=TRUE)
+  
+)
+```
+
+
+```{r}
+head(student_demo)
+```
+
+
+```{r}
+dim(student_demo)
+```
+```{r}
+inner_merge_school=inner_join(attendance_log,student_demo,by="student_id")
+```
+
+```{r}
+head(inner_merge_school)
+```
+```{r}
+dim(inner_merge_school)
+```
+```{r}
+str(inner_merge_school)
+```
+```{r}
+summary(inner_merge_school)
+```
+
+
+```{r}
+sapply(inner_merge_school,function(x) sum(is.na(x)))
+```
+```{r}
+left_merge_school=left_join(attendance_log,student_demo,by="student_id")
+```
+
+
+
+```{r}
+sapply(left_merge_school,function(x) sum(is.na(x)))
+```
+
+
+* 1. What was the overall attendance rate for the school district yesterday?
+```{r}
+# attendance rate (assume yesterday 2023-01-10)
+yesterday_attendance_rate=inner_merge_school%>%
+  filter(date=="2023-01-10")%>%
+  group_by(attendance)%>%
+  summarise(total_attendance=n())%>%
+  mutate(rate_attendance=total_attendance/sum(total_attendance)*100)
+yesterday_attendance_rate
+
+```
+
+
+```{r}
+#  present rate  for each school(assume yesterday 2023-01-10)
+yesterday_attendance_rate_by_school=inner_merge_school%>%
+  filter(date==as.Date("2023-01-10") )%>%
+  group_by(school_id)%>%
+  summarise(total_present=sum(attendance=="Present"),
+            total_students=n(),
+            attendance_rate=(total_present/total_students)
+  )
+yesterday_attendance_rate_by_school
+
+```
+
+* 2. Which grade level currently has the most students in this school district?
+
+```{r}
+#Find the grade level with the most student
+most_student_by_grade_level=inner_merge_school%>%
+  group_by(grade_level)%>%
+  summarise(total_students=n())%>%
+  top_n(1,total_students)%>%
+  pull(grade_level)
+most_student_by_grade_level
+```
+* 3. Which school had the highest attendance rate?
+
+```{r}
+school_attendance_rate=inner_merge_school%>%
+  group_by(school_id)%>%
+  summarise(attendance_rate=mean(attendance=="Present"))%>%
+  arrange(desc(attendance_rate))%>%
+  top_n(1,attendance_rate)
+school_attendance_rate
+```
+
+
+```{r}
+
+```
+```{r}
+# A. Distinct Students Analysis
+distinct_students <- attendance_log %>%
+  filter(date >= as.Date("2023-09-01") & date <= as.Date("2023-09-30") & attendance == 1) %>%
+  summarise(unique_students = n_distinct(student_id))
+distinct_students
+```
+# ```{r}
+# # B. Random Sampling for Survey
+# sample_students <- attendance_log %>%
+#   filter(attendance == 1) %>%
+#   distinct(student_id) %>%
+#   sample_n(size = 100)
+# ```
+
+```{r}
+
+# C. Grade Level Distribution
+grade_distribution <- inner_merge_school %>%
+  count(grade_level) %>%
+  mutate(percentage = n / sum(n) * 100)
+grade_distribution
+```
+
+```{r}
+
+#Practice Problem: Analyzing User Engagement Data
+
+# 1.Generate a Simulated user_engagement Data Frame: 
+user_ids2=rep(1:100,each=3);length(user_ids2)
+start_date2=as.Date("2024-01-01")
+end_date2=as.Date("2024-01-30")
+dates2=rep(seq(start_date2,end_date2,by="day"),times=10);length(dates2)
+pages_view=sample(0:5,size=300,replace=TRUE);length(pages_view)
+likes=sample(0:5,size=300,replace=TRUE);length(likes)
+comments=sample(0:3,size=300,replace=TRUE);length(comments)
+
+user_engagement=data.frame(
+  date=dates2,
+  user_id=user_ids2,
+  pages_view=pages_view,
+  likes=likes,
+  comments=comments
+)
+```
+
+
+```{r}
+head(user_engagement)
+```
+
+
+```{r}
+dim(user_engagement)
+```
+
+
+```{r}
+# 2-Define a Function to Calculate Daily Engagement Score:
+ calculate_engagement_score=function(x){
+   score=2*user_engagement[x,3]+3*user_engagement[x,4]+5*user_engagement[x,5]
+   return(score)
+ }
+```
+
+
+```{r}
+# 3- Calculate Daily Engagement Score
+user_engagement$engagement_score <- NA  # Initialize the column with NA values
+ for (i in 1:dim(user_engagement)[1]){
+  
+   user_engagement["engagement_score"][i,]=calculate_engagement_score(i)
+ }
+```
+
+
+```{r}
+head(user_engagement)
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
