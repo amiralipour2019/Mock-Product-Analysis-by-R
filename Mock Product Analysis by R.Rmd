@@ -67,7 +67,7 @@ library(lubridate)
 library(readxl)
 
 #Read the dataset
-setwd("D:\\Docs\\Jobs\\Intern\\Summer2024\\Meta\\Product Analytics- Interview\\Product Analysis")
+setwd("path\\Product Analysis")
 getwd()
 ```
 2. **Generating Mock Data**
@@ -1074,26 +1074,4 @@ head(user_engagement)
 ```
 
 
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
 
